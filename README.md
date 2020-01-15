@@ -13,6 +13,7 @@ firebase Cloud Messaging + Notification API, sample
 ***
 ### blog
 
+https://knaka0209.hatenablog.com/entry/fcm_sample1
 
 ***
 
