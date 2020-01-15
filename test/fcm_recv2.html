@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<!--
+  fetch -POSTの送信テスト    
+  フォアグランドで、受信する
+-->
+<html lang="en">
+<head>
+	<meta charset=utf-8 />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Firebase Cloud Messaging Example</title>
+	<link rel="manifest" href="/manifest.json">
+<!-- -->
+<script src="https://www.gstatic.com/firebasejs/6.3.4/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/6.3.4/firebase-messaging.js"></script>
+<script src="recv_notification.js?A4"></script>
+
+<head>
+<body>
+<h1>FCM-RECVTest 2:</h1>
+<hr />
+<p>
+  IID_TOKEN:
+    <input type="text" value="YOUR-INCETANCE-ID-TOKEN" id="textInstanceIdToken"
+     style="width:100%;box-sizing:border-box;">
+</p>
+<hr />
+INPUT : <br />
+<p>
+    title:
+    <input type="text" value="title-123" id="send_title">
+</p>
+<p>
+    Body:
+    <input type="text" value="body-ABC" id="send_body">
+</p>
+<hr />
+<a href="#" onClick="test_send();">[ test ]</a>
+
+</body>
+<!-- -->
+<script>
+firebase.initializeApp({
+   'messagingSenderId': 'YOUR-SENDER-ID'
+ });
+//FCM
+const messaging = firebase.messaging();
+messaging.usePublicVapidKey('<YOUR_PUBLIC_VAPID_KEY_HERE>');
+var IID_TOKEN ="";
+const FCM_SERVER_KEY = "YOUR-SERVER-KEY";
+const textInstanceIdToken = document.getElementById('textInstanceIdToken');
+const elem_title = document.getElementById('send_title');
+const elem_body = document.getElementById('send_body');
+
+//
+function test_send(){
+//console.log(IID_TOKEN.length );
+    var send_title = elem_title.value;
+    var send_body = elem_body.value;
+
+    if(IID_TOKEN.length < 1){ return; }
+    var key = FCM_SERVER_KEY;
+    var to = IID_TOKEN;
+    var notification = {
+        'title': send_title,
+        'body': send_body,
+        'icon': 'firebase-logo.png',
+        'click_action': 'http://localhost'
+    };
+
+    fetch('https://fcm.googleapis.com/fcm/send', {
+    'method': 'POST',
+    'headers': {
+        'Authorization': 'key=' + key,
+        'Content-Type': 'application/json'
+    },
+    'body': JSON.stringify({
+        'notification': notification,
+        'to': to
+        })
+    }).then(function(response) {
+//        console.log(response);
+    }).catch(function(error) {
+        console.error(error);
+    })
+};
+    //token
+    messaging.getToken().then((currentToken) => {
+        if (currentToken) {
+            sendTokenToServer(currentToken);
+            IID_TOKEN = currentToken;
+            textInstanceIdToken.value = IID_TOKEN;
+//        console.log(currentToken);
+        } else {
+            // Show permission request.
+            alert("ブラウザ通知を許可に設定下さい。メッセージを送受信できません");
+            console.log('No Instance ID token available. Request permission to generate one.');
+            // Show permission UI.
+            updateUIForPushPermissionRequired();
+            setTokenSentToServer(false);
+        }
+    }).catch((err) => {
+        console.log('An error occurred while retrieving token. ', err);
+        setTokenSentToServer(false);
+    });
+    //recv
+    messaging.onMessage((payload) => {
+//        console.log('Message received. ', payload);
+        var notify = payload.notification;
+        recv_pushMessage(notify.title, notify.body);
+        console.log(notify.title );
+    });
+    //
+    function sendTokenToServer(currentToken) {
+        if (!isTokenSentToServer()) {
+            console.log('Sending token to server...');
+            // TODO(developer): Send the current token to your server.
+            setTokenSentToServer(true);
+        } else {
+            console.log('Token already sent to server so won\'t send it again ' +
+            'unless it changes');
+        }
+    }
+    //
+    function isTokenSentToServer() {
+        return window.localStorage.getItem('sentToServer') === '1';
+    }
+    //
+    function setTokenSentToServer(sent) {
+        window.localStorage.setItem('sentToServer', sent ? '1' : '0');
+    }
+</script>
+</html>
